@@ -50,7 +50,7 @@ The Vite dev server proxies `/api` and `/uploads` to the backend on port 5000, s
 
 ## Folder Structure
 ```
-foodrescue/
+Annapurna/
 ├── backend/
 │   ├── config/db.js
 │   ├── models/User.js, Donation.js
