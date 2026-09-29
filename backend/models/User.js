@@ -1,0 +1,59 @@
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true, minlength: 6 },
+    role: {
+      type: String,
+      enum: ["donor", "volunteer", "ngo", "admin"],
+      required: true,
+    },
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    location: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+
+    // NGO-specific fields
+    ngoRegistrationNumber: { type: String, default: "" },
+    ngoDocumentUrl: { type: String, default: "" },
+    isVerified: { type: Boolean, default: false }, // NGOs must be verified by admin
+    verificationStatus: {
+      type: String,
+      enum: ["not_applicable", "pending", "approved", "rejected"],
+      default: "not_applicable",
+    },
+
+    // Trust / gamification
+    rating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
+    completedCount: { type: Number, default: 0 }, // pickups/donations completed
+    badges: [{ type: String }],
+
+    isActive: { type: Boolean, default: true }, // admin can suspend
+  },
+  { timestamps: true }
+);
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
+
+userSchema.methods.toSafeObject = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
+
+module.exports = mongoose.model("User", userSchema);
